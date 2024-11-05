@@ -1,21 +1,13 @@
-'use client'
-
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
-
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn')
-    if (!isLoggedIn) {
-      router.push('/login')
-    }
-  }, [router])
-
-  return <>{children}</>
+  return (
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto mt-4">
+        {children}
+      </main>
+    </div>
+  )
 }

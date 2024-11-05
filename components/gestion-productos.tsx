@@ -8,7 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Search, ArrowUpDown, Edit, Trash, AlertTriangle } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface Product {
   id: number
@@ -16,21 +21,24 @@ interface Product {
   quantity: number
   price: number
   expirationDate: string
+  ingressDate: string
   description?: string
 }
 
 export default function GestionProductos() {
   const [products, setProducts] = useState<Product[]>([
-    { id: 1, name: 'Salmón', quantity: 500, price: 15.00, expirationDate: '2024-12-15' },
-    { id: 2, name: 'Atún', quantity: 450, price: 13.00, expirationDate: '2024-12-20' },
-    { id: 3, name: 'Bacalao', quantity: 300, price: 11.00, expirationDate: '2024-12-18' },
-    { id: 4, name: 'Trucha', quantity: 250, price: 12.50, expirationDate: '2043-12-22' },
-    { id: 5, name: 'Merluza', quantity: 200, price: 10.00, expirationDate: '2024-12-25' },
-    { id: 6, name: 'Sardinas', quantity: 150, price: 6.00, expirationDate: '2024-12-10' },
-    { id: 7, name: 'Lenguado', quantity: 100, price: 20.00, expirationDate: '2024-11-04' },
-    { id: 8, name: 'Dorada', quantity: 80, price: 15.00, expirationDate: '2024-12-28' },
-    { id: 9, name: 'Lubina', quantity: 75, price: 15.00, expirationDate: '2024-11-06' },
-    { id: 10, name: 'Rodaballo', quantity: 50, price: 20.00, expirationDate: '2024-12-31' },
+    { id: 1, name: 'Salmón', quantity: 500, price: 15.00, expirationDate: '2024-12-15', ingressDate: '2024-01-01' },
+    { id: 2, name: 'Atún', quantity: 450, price: 13.00, expirationDate: '2024-12-20', ingressDate: '2024-01-02' },
+    { id: 3, name: 'Bacalao', quantity: 300, price: 11.00, expirationDate: '2024-12-18', ingressDate: '2024-01-03' },
+    { id: 4, name: 'Trucha', quantity: 250, price: 12.50, expirationDate: '2024-12-22', ingressDate: '2024-01-04' },
+    { id: 5, name: 'Merluza', quantity: 200, price: 10.00, expirationDate: '2024-12-25', ingressDate: '2024-01-05' },
+    { id: 6, name: 'Dorada', quantity: 180, price: 14.50, expirationDate: '2024-12-28', ingressDate: '2024-01-06' },
+    { id: 7, name: 'Lubina', quantity: 220, price: 16.00, expirationDate: '2024-12-30', ingressDate: '2024-01-07' },
+    { id: 8, name: 'Rodaballo', quantity: 150, price: 18.00, expirationDate: '2024-12-31', ingressDate: '2024-01-08' },
+    { id: 9, name: 'Rape', quantity: 100, price: 20.00, expirationDate: '2024-12-29', ingressDate: '2024-01-09' },
+    { id: 10, name: 'Lenguado', quantity: 120, price: 22.00, expirationDate: '2024-12-27', ingressDate: '2024-01-10' },
+    { id: 11, name: 'Boquerón', quantity: 600, price: 8.00, expirationDate: '2024-12-26', ingressDate: '2024-01-11' },
+    { id: 12, name: 'Sardina', quantity: 550, price: 7.50, expirationDate: '2024-12-24', ingressDate: '2024-01-12' },
   ])
   const [searchTerm, setSearchTerm] = useState('')
   const [sortColumn, setSortColumn] = useState<keyof Product>('name')
@@ -38,7 +46,6 @@ export default function GestionProductos() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const router = useRouter()
 
   const handleSort = (column: keyof Product) => {
     if (column === sortColumn) {
@@ -50,6 +57,11 @@ export default function GestionProductos() {
   }
 
   const sortedProducts = [...products].sort((a, b) => {
+    if (sortColumn === 'expirationDate' || sortColumn === 'ingressDate') {
+      const aDate = new Date(a[sortColumn]);
+      const bDate = new Date(b[sortColumn]);
+      return sortDirection === 'asc' ? aDate.getTime() - bDate.getTime() : bDate.getTime() - aDate.getTime();
+    }
     const aValue = a[sortColumn];
     const bValue = b[sortColumn];
     if (aValue === undefined && bValue === undefined) return 0;
@@ -64,15 +76,16 @@ export default function GestionProductos() {
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleAddProduct = (newProduct: Omit<Product, 'id'>) => {
+  const handleAddProduct = (newProduct: Omit<Product, 'id' | 'ingressDate'>) => {
     const id = Math.max(...products.map(p => p.id), 0) + 1
-    setProducts([...products, { ...newProduct, id }])
+    const ingressDate = new Date().toISOString().split('T')[0]
+    setProducts([...products, { ...newProduct, id, ingressDate }])
     setIsAddDialogOpen(false)
   }
 
-  const handleEditProduct = (updatedProduct: Omit<Product, 'id'>) => {
+  const handleEditProduct = (updatedProduct: Omit<Product, 'id' | 'ingressDate'>) => {
     if (editingProduct) {
-      setProducts(products.map(p => p.id === editingProduct.id ? { ...updatedProduct, id: editingProduct.id } : p));
+      setProducts(products.map(p => p.id === editingProduct.id ? { ...updatedProduct, id: editingProduct.id, ingressDate: editingProduct.ingressDate } : p));
     }
     setIsEditDialogOpen(false);
   };
@@ -81,19 +94,25 @@ export default function GestionProductos() {
     setProducts(products.filter(p => p.id !== id))
   }
 
-  const isNearExpiration = (expirationDate: string) => {
-    const today = new Date()
-    const expDate = new Date(expirationDate)
-    const diffTime = expDate.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    return diffDays <= 5 && diffDays > 0
-  }
+  const formatDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year.slice(-2)}`;
+  };
 
-  const isExpired = (expirationDate: string) => {
-    const today = new Date()
-    const expDate = new Date(expirationDate)
-    return expDate < today
-  }
+  const isNearExpiration = (dateString: string) => {
+    const [day, month, year] = dateString.split('/');
+    const expDate = new Date(parseInt(`20${year}`), parseInt(month) - 1, parseInt(day));
+    const today = new Date();
+    const diffTime = expDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 5 && diffDays > 0;
+  };
+
+  const isExpired = (dateString: string) => {
+    const [day, month, year] = dateString.split('/');
+    const expDate = new Date(parseInt(`20${year}`), parseInt(month) - 1, parseInt(day));
+    return expDate < new Date();
+  };
 
   return (
     <div className="container mx-auto p-4">
@@ -119,7 +138,6 @@ export default function GestionProductos() {
             <ProductForm onSubmit={handleAddProduct} />
           </DialogContent>
         </Dialog>
-        <Button onClick={() => router.push('/reporte-mensual')}>Ver Reporte Mensual</Button>
       </div>
       <Table>
         <TableHeader>
@@ -133,6 +151,9 @@ export default function GestionProductos() {
             <TableHead onClick={() => handleSort('price')} className="cursor-pointer">
               Precio <ArrowUpDown className="inline h-4 w-4" />
             </TableHead>
+            <TableHead onClick={() => handleSort('ingressDate')} className="cursor-pointer">
+              Fecha de Ingreso <ArrowUpDown className="inline h-4 w-4" />
+            </TableHead>
             <TableHead onClick={() => handleSort('expirationDate')} className="cursor-pointer">
               Fecha de Vencimiento <ArrowUpDown className="inline h-4 w-4" />
             </TableHead>
@@ -142,22 +163,43 @@ export default function GestionProductos() {
         <TableBody>
           {filteredProducts.map((product) => (
             <TableRow key={product.id} className={
-              isExpired(product.expirationDate) ? 'bg-red-100' :
-              isNearExpiration(product.expirationDate) ? 'bg-yellow-100' : ''
+              isExpired(formatDate(product.expirationDate)) ? 'bg-red-100' :
+              isNearExpiration(formatDate(product.expirationDate)) ? 'bg-yellow-100' : ''
             }>
-              <TableCell>{product.name}</TableCell>
-              <TableCell>{product.quantity}</TableCell>
-              <TableCell>${Number(product.price).toFixed(2)}</TableCell>
-              <TableCell className="flex items-center">
-                {product.expirationDate}
-                {isNearExpiration(product.expirationDate) && (
-                  <AlertTriangle className="h-4 w-4 ml-2 text-yellow-500" />
-                )}
-                {isExpired(product.expirationDate) && (
-                  <AlertTriangle className="h-4 w-4 ml-2 text-red-500" />
-                )}
+              <TableCell className="py-4">{product.name}</TableCell>
+              <TableCell className="py-4">{product.quantity}</TableCell>
+              <TableCell className="py-4">${Number(product.price).toFixed(2)}</TableCell>
+              <TableCell className="py-4">{formatDate(product.ingressDate)}</TableCell>
+              <TableCell className="py-4">
+                <div className="flex items-center">
+                  {formatDate(product.expirationDate)}
+                  {isNearExpiration(formatDate(product.expirationDate)) && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="h-4 w-4 ml-2 text-yellow-500 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Este producto está próximo a vencer</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  {isExpired(formatDate(product.expirationDate)) && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="h-4 w-4 ml-2 text-red-500 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Este producto ha vencido</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
               </TableCell>
-              <TableCell>
+              <TableCell className="py-4">
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="icon" onClick={() => setEditingProduct(product)}>
@@ -204,33 +246,45 @@ export default function GestionProductos() {
 }
 
 interface ProductFormProps {
-  onSubmit: (product: Omit<Product, 'id'>) => void;
+  onSubmit: (product: Omit<Product, 'id' | 'ingressDate'>) => void;
   initialData?: Product;
 }
 
 function ProductForm({ onSubmit, initialData }: ProductFormProps) {
-  const [formData, setFormData] = useState<Omit<Product, 'id'>>(
-    initialData || {
-      name: '',
-      quantity: 0,
-      price: 0,
-      expirationDate: '',
-      description: '',
-    }
-  )
+  const [formData, setFormData] = useState<Omit<Product, 'id' | 'ingressDate'>>(
+    initialData
+      ? {
+          ...initialData,
+          expirationDate: initialData.expirationDate,
+        }
+      : {
+          name: '',
+          quantity: 0,
+          price: 0,
+          expirationDate: '',
+          description: '',
+        }
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
+    const { name, value } = e.target;
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === 'price' || name === 'quantity' ? Number(value) : value
-    }))
-  }
+      [name]:
+        name === 'quantity'
+          ? Number(value)
+          : name === 'price'
+          ? parseFloat(value)
+          : value,
+    }));
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(formData)
-  }
+  const handleSubmit = 
+
+ (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -248,7 +302,14 @@ function ProductForm({ onSubmit, initialData }: ProductFormProps) {
       </div>
       <div>
         <Label htmlFor="expirationDate">Fecha de vencimiento</Label>
-        <Input id="expirationDate" name="expirationDate" type="date" value={formData.expirationDate} onChange={handleChange} required />
+        <Input
+          id="expirationDate"
+          name="expirationDate"
+          type="date"
+          value={formData.expirationDate}
+          onChange={handleChange}
+          required
+        />
       </div>
       <div>
         <Label htmlFor="description">Descripción (opcional)</Label>

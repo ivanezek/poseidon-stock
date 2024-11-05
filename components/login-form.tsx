@@ -15,8 +15,11 @@ export default function LoginForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    // En un escenario real, aquí se realizaría la autenticación con un backend
     if (username === 'admin' && password === 'password') {
+      // Simulamos el almacenamiento de una sesión
       localStorage.setItem('isLoggedIn', 'true')
+      localStorage.setItem('username', username)
       router.push('/dashboard')
     } else {
       setError('Usuario o contraseña incorrectos')
